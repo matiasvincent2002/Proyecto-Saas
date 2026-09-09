@@ -82,7 +82,7 @@ function App() {
 
   useEffect(() => {
     const canReviewTasks = ['LIDER', 'ADMINISTRADOR'].includes(user?.role)
-    if ((!['Tareas', 'Revisión'].includes(activeView) && !canReviewTasks) || !token) return
+    if ((!['Resumen', 'Tareas', 'Revisión'].includes(activeView) && !canReviewTasks) || !token) return
 
     async function loadTasks() {
       setIsLoadingTasks(true)
@@ -104,7 +104,7 @@ function App() {
   }, [activeView, token, user?.role])
 
   useEffect(() => {
-    if (!['Proyectos', 'Tareas'].includes(activeView) || !token) return
+    if (!['Resumen', 'Proyectos', 'Tareas'].includes(activeView) || !token) return
 
     async function loadProjects() {
       setIsLoadingProjects(true)
@@ -500,9 +500,9 @@ function App() {
             {!isLoadingTasks && !tasksError && tasks.length > 0 && <div className="task-list">{tasks.filter((task) => activeView === 'Revisión' ? task.status === 'PENDING_REVIEW' : taskFilter === 'Todas' || (taskFilter === 'Hechas' ? task.status === 'COMPLETED' : task.status !== 'COMPLETED')).map((task) => editingTask?.id === task.id ? <form className="task-edit-form" key={task.id} onSubmit={handleUpdateTask}><input name="title" defaultValue={task.title} aria-label="Título de la tarea" required /><input name="description" defaultValue={task.description} aria-label="Descripción de la tarea" /><select name="projectId" defaultValue={task.projectId || ''} aria-label="Proyecto de la tarea"><option value="">Sin proyecto</option>{projects.map((project) => <option value={project.id} key={project.id}>{project.name}</option>)}</select><select name="assigneeId" defaultValue={task.assigneeId || ''} aria-label="Persona asignada"><option value="">Sin asignar</option>{team.filter((member) => ['PROGRAMADOR', 'DISEÑADOR'].includes(member.role)).map((member) => <option value={member.id} key={member.id}>{member.name}</option>)}</select><select name="priority" defaultValue={task.priority || 'MEDIUM'} aria-label="Prioridad"><option value="LOW">Baja</option><option value="MEDIUM">Media</option><option value="HIGH">Alta</option></select><input name="dueDate" type="date" defaultValue={task.dueDate || ''} aria-label="Fecha límite" /><button type="submit">Guardar</button><button type="button" onClick={() => setEditingTask(null)}>Cancelar</button></form> : <article className="task-row" key={task.id}><button className={task.status === 'COMPLETED' ? 'task-check done' : task.status === 'PENDING_REVIEW' ? 'task-check review' : 'task-check'} type="button" onClick={() => handleToggleTask(task)} disabled={task.status === 'COMPLETED' && ['PROGRAMADOR', 'DISEÑADOR'].includes(user.role)} aria-label={user.role === 'LIDER' || user.role === 'ADMINISTRADOR' ? (task.status === 'PENDING_REVIEW' ? 'Aprobar tarea' : 'Enviar a revisión') : (task.status === 'PENDING_REVIEW' ? 'Volver a trabajar' : 'Enviar a revisión')}>{task.status === 'COMPLETED' ? '✓' : task.status === 'PENDING_REVIEW' ? '!' : ''}</button><span><strong>{task.title}</strong><small>{task.description || 'Sin descripción'}{task.assigneeId ? ` · ${team.find((member) => member.id === task.assigneeId)?.name || 'Persona asignada'}` : ''}{task.dueDate ? ` · Límite: ${task.dueDate}` : ''}</small></span><b className={`priority-${task.priority || 'MEDIUM'}`}>{task.priority === 'HIGH' ? 'Alta' : task.priority === 'LOW' ? 'Baja' : 'Media'}</b><b>{task.status === 'COMPLETED' ? 'Aprobada' : task.status === 'PENDING_REVIEW' ? 'En revisión' : 'Pendiente'}</b><span className="row-actions">{activeView === 'Revisión' && <><button className="row-action approve-action" type="button" onClick={() => handleReviewDecision(task, 'COMPLETED')}>Aprobar</button><button className="row-action return-action" type="button" onClick={() => handleReviewDecision(task, 'IN_PROGRESS')}>Devolver</button></>}{activeView !== 'Revisión' && !['PROGRAMADOR', 'DISEÑADOR'].includes(user.role) && <button className="row-action" type="button" onClick={() => setEditingTask(task)} aria-label={`Editar ${task.title}`}>Editar</button>}{['ADMINISTRADOR', 'LIDER'].includes(user.role) && <button className="row-action danger visible-delete" type="button" onClick={() => handleDeleteTask(task.id)} aria-label={`Eliminar ${task.title}`}>Eliminar</button>}</span></article>)}</div>}
           </section>
         ) : <div className="dashboard-grid">
-          <article className="metric-card accent-card"><span className="metric-label">Personas activas</span><strong>{team.filter((member) => member.isActive).length || '--'}</strong><p>Usuarios activos en tu espacio.</p></article>
-          <article className="metric-card"><span className="metric-label">Proyectos en curso</span><strong>--</strong><p>Los proyectos aparecerán cuando exista su endpoint.</p></article>
-          <article className="metric-card"><span className="metric-label">Tareas pendientes</span><strong>--</strong><p>Una lectura rápida del trabajo por hacer.</p></article>
+          <article className="metric-card accent-card"><span className="metric-label">Personas activas</span><strong>{team.filter((member) => member.isActive).length}</strong><p>Usuarios activos en tu espacio.</p></article>
+          <article className="metric-card"><span className="metric-label">Proyectos en curso</span><strong>{projects.filter((project) => project.status === 'IN_PROGRESS').length}</strong><p>Proyectos con trabajo activo.</p></article>
+          <article className="metric-card"><span className="metric-label">Tareas pendientes</span><strong>{tasks.filter((task) => !['COMPLETED'].includes(task.status)).length}</strong><p>Tareas que todavía requieren atención.</p></article>
         </div>}
         <section className="profile-card">
           <div><p className="eyebrow">Tu perfil</p><h2>{user.name}</h2><p>{user.email}</p></div>
