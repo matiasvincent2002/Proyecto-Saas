@@ -59,3 +59,24 @@ test('crea, autentica y revoca una sesión opaca', async () => {
   await authService.logout(result.token);
   await assert.rejects(() => authService.authenticate(result.token), { code: 'INVALID_SESSION' });
 });
+
+test('permite cambiar la contraseña con la contraseña actual', async () => {
+  const user = {
+    id: randomUUID(),
+    email: 'change@example.com',
+    passwordHash: await hashPassword('old-secret')
+  };
+  let savedHash = user.passwordHash;
+  const authService = new AuthService(
+    {
+      async findById() { return { ...user, passwordHash: savedHash }; }
+    },
+    {},
+  );
+  authService.userRepository.updateById = async (_id, changes) => {
+    savedHash = changes.passwordHash;
+  };
+
+  await authService.changePassword(user.id, 'old-secret', 'new-secret');
+  await assert.doesNotReject(() => authService.changePassword(user.id, 'new-secret', 'final-secret'));
+});

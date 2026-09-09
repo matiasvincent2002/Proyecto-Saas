@@ -363,7 +363,17 @@ Ejecuta las pruebas del proyecto:
 npm test
 ```
 
-La suite actual comprueba la creación, autenticación y revocación de una sesión.
+La suite actual comprueba sesiones, permisos, jerarquía, asignaciones, rate limit y cambio de contraseña.
+
+## Docker
+
+Docker no es necesario para el desarrollo local, pero el proyecto incluye una configuración reproducible:
+
+```bash
+docker compose up --build
+```
+
+La aplicación quedará disponible en `http://localhost:8080` y los datos se conservarán en el volumen `app-data`.
 
 ## Consideraciones
 
