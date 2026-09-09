@@ -33,4 +33,24 @@ export class UserRepository {
     await this.repository.writeAll(users);
     return user;
   }
+
+  async updateById(id, changes) {
+    const users = await this.repository.readAll();
+    const user = users.find((item) => item.id === id && !item.isDeleted);
+    if (!user) return null;
+    Object.assign(user, changes, { updatedAt: new Date().toISOString() });
+    await this.repository.writeAll(users);
+    return user;
+  }
+
+  async deleteById(id) {
+    const users = await this.repository.readAll();
+    const user = users.find((item) => item.id === id && !item.isDeleted);
+    if (!user) return false;
+    user.isDeleted = true;
+    user.isActive = false;
+    user.deletedAt = new Date().toISOString();
+    await this.repository.writeAll(users);
+    return true;
+  }
 }

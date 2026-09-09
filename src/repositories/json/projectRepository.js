@@ -12,6 +12,11 @@ export class ProjectRepository {
     return projects.filter((project) => !project.isDeleted);
   }
 
+  async findById(id) {
+    const projects = await this.repository.readAll();
+    return projects.find((project) => project.id === id && !project.isDeleted) ?? null;
+  }
+
   async create(project) {
     const projects = await this.repository.readAll();
     projects.push(project);

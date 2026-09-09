@@ -90,9 +90,10 @@
 .quick-create input:focus { border-color: var(--teal); }
 .quick-create select { min-width: 0; padding: .75rem .8rem; color: var(--ink); background: var(--cream); border: 1px solid var(--line); outline: none; }
 .quick-create select:focus { border-color: var(--teal); }
+.quick-create select[multiple] { min-height: 2.7rem; }
 .quick-create button { padding: .75rem .9rem; color: #fffaf0; background: var(--teal); border: 0; font-size: .75rem; }
 .quick-create button:disabled { cursor: wait; opacity: .6; }
-.user-create { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr) auto auto; }
+.user-create { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr) auto auto auto; }
 .inline-status { color: var(--muted); font-size: .85rem; }
 .team-list { border-bottom: 1px solid var(--line); }
 .team-row { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--line); }
@@ -102,6 +103,10 @@
 .team-row small, .team-row em { color: var(--muted); font-size: .72rem; font-style: normal; }
 .team-row b { color: var(--muted); font-size: .7rem; font-weight: normal; }
 .team-row .active-label { color: #4b9464; }
+.member-edit-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) minmax(0, 1fr) auto auto auto auto; gap: .5rem; padding: 1rem 0; border-bottom: 1px solid var(--line); }
+.member-edit-form input, .member-edit-form select { min-width: 0; padding: .55rem; color: var(--ink); background: var(--cream); border: 1px solid var(--line); }
+.member-edit-form button { padding: .55rem .7rem; color: #fffaf0; background: var(--teal); border: 0; font-size: .7rem; }
+.member-edit-form button:last-child { color: var(--muted); background: transparent; }
 .project-section { margin-top: 2rem; }
 .empty-module { display: grid; grid-template-columns: 5rem minmax(0, 520px); gap: 1.5rem; align-items: start; padding: 3rem 0; border-bottom: 1px solid var(--line); }
 .empty-module-index { color: var(--coral); font-family: Georgia, serif; font-size: 3rem; }
@@ -145,6 +150,7 @@
 .task-edit-form button:last-child { color: var(--muted); background: transparent; }
 .project-edit-form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto auto auto; gap: .5rem; padding: 1rem 0; border-bottom: 1px solid var(--line); }
 .project-edit-form input, .project-edit-form select { min-width: 0; padding: .55rem; color: var(--ink); background: var(--cream); border: 1px solid var(--line); }
+.project-edit-form select[multiple] { min-height: 2.6rem; }
 .project-edit-form button { padding: .55rem .7rem; color: #fffaf0; background: var(--teal); border: 0; font-size: .7rem; }
 .project-edit-form button:last-child { color: var(--muted); background: transparent; }
 
@@ -174,6 +180,7 @@
   .section-heading { align-items: start; flex-direction: column; }
   .quick-create { grid-template-columns: 1fr; }
   .user-create { grid-template-columns: 1fr; }
+  .member-edit-form { grid-template-columns: 1fr; }
   .task-row { grid-template-columns: auto minmax(0, 1fr); }
   .task-row b { grid-column: 2; }
   .row-actions { grid-column: 2; }

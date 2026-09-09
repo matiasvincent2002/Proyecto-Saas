@@ -87,6 +87,7 @@ DATA_DIRECTORY=./data
 - `PORT`: puerto del servidor
 - `SESSION_TTL_HOURS`: duración de la sesión en horas
 - `DATA_DIRECTORY`: carpeta donde se guardan los JSON de datos
+- `FRONTEND_ORIGIN`: origen permitido para peticiones del frontend
 
 ## Ejecutar la aplicación
 
@@ -252,6 +253,8 @@ Roles disponibles: `LIDER`, `PROGRAMADOR` y `DISEÑADOR`.
 
 Solo un usuario con rol `ADMINISTRADOR` puede crear nuevos usuarios. Si un líder o programador intenta hacerlo directamente contra la API, recibirá `403 INSUFFICIENT_PERMISSIONS`.
 
+La creación, edición y eliminación de proyectos está reservada a `ADMINISTRADOR` y `LIDER`.
+
 ### Proyectos
 
 Lista proyectos o crea uno nuevo. Requiere autenticación.
@@ -306,6 +309,8 @@ Body para actualizar su estado:
 ```
 
 Estados disponibles: `TODO`, `IN_PROGRESS`, `PENDING_REVIEW` y `COMPLETED`.
+
+Los programadores y diseñadores solo reciben las tareas asignadas a su usuario y pueden enviarlas a `PENDING_REVIEW`. La aprobación final (`COMPLETED`) solo puede realizarla un `LIDER` o un `ADMINISTRADOR`. Las devoluciones desde revisión requieren un motivo y se guardan en el historial de la tarea.
 
 Los programadores y diseñadores solo reciben las tareas asignadas a su usuario y pueden enviarlas a `PENDING_REVIEW`. La aprobación final (`COMPLETED`) solo puede realizarla un `LIDER` o un `ADMINISTRADOR`.
 

@@ -1,12 +1,21 @@
 import { randomUUID } from 'node:crypto';
 import { HttpError } from '../utils/httpError.js';
 
-export function createTaskController(taskRepository, userRepository) {
+export function createTaskController(taskRepository, userRepository, projectRepository) {
   async function validateAssignee(assigneeId) {
     if (!assigneeId) return;
     const assignee = await userRepository.findById(assigneeId);
     if (!assignee || !['PROGRAMADOR', 'DISEÑADOR'].includes(assignee.role)) {
       throw new HttpError(400, 'INVALID_TASK_ASSIGNEE', 'Las tareas solo pueden asignarse a programadores o diseñadores');
+    }
+  }
+
+  async function validateProject(projectId, assigneeId) {
+    if (!projectId) return;
+    const project = await projectRepository.findById(projectId);
+    if (!project) throw new HttpError(400, 'INVALID_TASK_PROJECT', 'El proyecto de la tarea no existe');
+    if (assigneeId && project.memberIds?.length > 0 && !project.memberIds.includes(assigneeId)) {
+      throw new HttpError(400, 'ASSIGNEE_NOT_IN_PROJECT', 'La persona asignada no pertenece al proyecto');
     }
   }
 
@@ -27,6 +36,7 @@ export function createTaskController(taskRepository, userRepository) {
         throw new HttpError(400, 'INVALID_TASK_INPUT', 'El título de la tarea es obligatorio');
       }
       await validateAssignee(assigneeId);
+      await validateProject(projectId, assigneeId);
       const task = await taskRepository.create({
         id: randomUUID(),
         title: title.trim(),
@@ -36,13 +46,14 @@ export function createTaskController(taskRepository, userRepository) {
         status: 'TODO',
         isDeleted: false,
         createdBy: request.user.id,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        reviewHistory: []
       });
       response.status(201).json({ data: task, message: 'Tarea creada correctamente' });
     },
     updateStatus: async (request, response) => {
       const allowedStatuses = ['TODO', 'IN_PROGRESS', 'PENDING_REVIEW', 'COMPLETED'];
-      const { status } = request.body;
+      const { status, reason = '' } = request.body;
       if (!allowedStatuses.includes(status)) {
         throw new HttpError(400, 'INVALID_TASK_STATUS', 'El estado de la tarea no es válido');
       }
@@ -56,10 +67,13 @@ export function createTaskController(taskRepository, userRepository) {
       }
       const existingTask = await taskRepository.findById(request.params.id);
       if (!existingTask) throw new HttpError(404, 'TASK_NOT_FOUND', 'La tarea no existe');
+      if (status === 'IN_PROGRESS' && existingTask.status === 'PENDING_REVIEW' && !reason.trim()) {
+        throw new HttpError(400, 'REVIEW_REASON_REQUIRED', 'Debes indicar por qué devuelves la tarea');
+      }
       if (workerRoles.includes(request.user.role) && existingTask.assigneeId !== request.user.id) {
         throw new HttpError(403, 'TASK_ACCESS_DENIED', 'Solo puedes actualizar tus tareas asignadas');
       }
-      const task = await taskRepository.updateStatus(request.params.id, status);
+      const task = await taskRepository.updateStatus(request.params.id, status, request.user, reason.trim());
       if (!task) {
         throw new HttpError(404, 'TASK_NOT_FOUND', 'La tarea no existe');
       }
@@ -74,6 +88,7 @@ export function createTaskController(taskRepository, userRepository) {
         throw new HttpError(400, 'INVALID_TASK_INPUT', 'El título de la tarea es obligatorio');
       }
       await validateAssignee(assigneeId);
+      await validateProject(projectId, assigneeId);
       const existingTask = await taskRepository.findById(request.params.id);
       if (!existingTask) throw new HttpError(404, 'TASK_NOT_FOUND', 'La tarea no existe');
       if (['PROGRAMADOR', 'DISEÑADOR'].includes(request.user.role) && existingTask.assigneeId !== request.user.id) {

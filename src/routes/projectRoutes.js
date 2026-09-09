@@ -1,10 +1,10 @@
 import { Router } from 'express';
 
-export function createProjectRoutes(controller, authenticate) {
+export function createProjectRoutes(controller, authenticate, requireProjectManager) {
   const router = Router();
   router.get('/', authenticate, controller.list);
-  router.post('/', authenticate, controller.create);
-  router.put('/:id', authenticate, controller.update);
-  router.delete('/:id', authenticate, controller.remove);
+  router.post('/', authenticate, requireProjectManager, controller.create);
+  router.put('/:id', authenticate, requireProjectManager, controller.update);
+  router.delete('/:id', authenticate, requireProjectManager, controller.remove);
   return router;
 }

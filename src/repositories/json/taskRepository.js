@@ -25,6 +25,11 @@ export class TaskRepository {
     return tasks.find((task) => task.id === id && !task.isDeleted) ?? null;
   }
 
+  async countActiveByProjectId(projectId) {
+    const tasks = await this.findAll();
+    return tasks.filter((task) => task.projectId === projectId).length;
+  }
+
   async create(task) {
     const tasks = await this.repository.readAll();
     tasks.push(task);
@@ -32,12 +37,20 @@ export class TaskRepository {
     return task;
   }
 
-  async updateStatus(id, status) {
+  async updateStatus(id, status, actor, reason = '') {
     const tasks = await this.repository.readAll();
     const task = tasks.find((item) => item.id === id && !item.isDeleted);
     if (!task) return null;
     task.status = status;
     task.updatedAt = new Date().toISOString();
+    task.reviewHistory = task.reviewHistory ?? [];
+    task.reviewHistory.push({
+      status,
+      reason,
+      userId: actor.id,
+      role: actor.role,
+      createdAt: task.updatedAt
+    });
     await this.repository.writeAll(tasks);
     return task;
   }

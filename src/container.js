@@ -18,7 +18,8 @@ const authService = new AuthService(userRepository, sessionRepository);
 
 export const authController = createAuthController(authService);
 export const userController = createUserController(userRepository, (user) => authService.toPublicUser(user));
-export const projectController = createProjectController(projectRepository);
-export const taskController = createTaskController(taskRepository, userRepository);
+export const projectController = createProjectController(projectRepository, userRepository, taskRepository);
+export const taskController = createTaskController(taskRepository, userRepository, projectRepository);
 export const authenticate = createAuthenticate(authService);
 export const requireAdmin = requireRole('ADMINISTRADOR');
+export const requireProjectManager = requireRole('ADMINISTRADOR', 'LIDER');

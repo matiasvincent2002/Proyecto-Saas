@@ -1,27 +1,9 @@
 import { useEffect, useState } from 'react'
 import './App.css'
+import { request } from './lib/api.js'
 
 const TOKEN_KEY = 'software-team-token'
 const USER_KEY = 'software-team-user'
-
-async function request(path, options = {}) {
-  const response = await fetch(path, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-  })
-
-  if (response.status === 204) return null
-
-  const payload = await response.json()
-  if (!response.ok) {
-    throw new Error(payload.error?.message || 'No se pudo completar la petición')
-  }
-
-  return payload.data
-}
 
 function App() {
   const [user, setUser] = useState(() => {
@@ -46,6 +28,7 @@ function App() {
   const [isCreating, setIsCreating] = useState(false)
   const [editingTask, setEditingTask] = useState(null)
   const [editingProject, setEditingProject] = useState(null)
+  const [editingMember, setEditingMember] = useState(null)
 
   useEffect(() => {
     async function restoreSession() {
@@ -186,7 +169,7 @@ function App() {
       const project = await request('/api/v1/projects', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ name: formData.get('name'), description: formData.get('description') }),
+        body: JSON.stringify({ name: formData.get('name'), description: formData.get('description'), leaderId: formData.get('leaderId') || null, memberIds: formData.getAll('memberIds') }),
       })
       setProjects((currentProjects) => [...currentProjects, project])
       form.reset()
@@ -248,11 +231,13 @@ function App() {
   }
 
   async function handleReviewDecision(task, status) {
+    const reason = status === 'IN_PROGRESS' ? window.prompt('Indica el motivo de la devolución') : ''
+    if (status === 'IN_PROGRESS' && !reason?.trim()) return
     try {
       const updatedTask = await request(`/api/v1/tasks/${task.id}/status`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, reason }),
       })
       setTasks((currentTasks) => currentTasks.map((item) => item.id === updatedTask.id ? updatedTask : item))
     } catch (reviewError) {
@@ -305,7 +290,7 @@ function App() {
       const member = await request('/api/v1/users', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ name: formData.get('name'), email: formData.get('email'), password: formData.get('password'), role: formData.get('role') }),
+        body: JSON.stringify({ name: formData.get('name'), email: formData.get('email'), password: formData.get('password'), role: formData.get('role'), leaderId: formData.get('leaderId') || null }),
       })
       setTeam((currentTeam) => [...currentTeam, member])
       form.reset()
@@ -313,6 +298,48 @@ function App() {
       setTeamError(createError.message)
     } finally {
       setIsCreating(false)
+    }
+  }
+
+  async function handleUpdateUser(event) {
+    event.preventDefault()
+    const form = event.currentTarget
+    try {
+      const formData = new FormData(form)
+      const member = await request(`/api/v1/users/${editingMember.id}`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name: formData.get('name'), email: formData.get('email'), password: formData.get('password'), role: formData.get('role'), leaderId: formData.get('leaderId') || null }),
+      })
+      setTeam((currentTeam) => currentTeam.map((item) => item.id === member.id ? member : item))
+      setEditingMember(null)
+    } catch (updateError) {
+      setTeamError(updateError.message)
+    }
+  }
+
+  async function handleToggleUser(member) {
+    try {
+      const updatedMember = await request(`/api/v1/users/${member.id}/active`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      setTeam((currentTeam) => currentTeam.map((item) => item.id === updatedMember.id ? updatedMember : item))
+    } catch (updateError) {
+      setTeamError(updateError.message)
+    }
+  }
+
+  async function handleDeleteUser(member) {
+    if (!window.confirm(`¿Eliminar a ${member.name}?`)) return
+    try {
+      await request(`/api/v1/users/${member.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      setTeam((currentTeam) => currentTeam.filter((item) => item.id !== member.id))
+    } catch (deleteError) {
+      setTeamError(deleteError.message)
     }
   }
 
@@ -324,7 +351,7 @@ function App() {
       const project = await request(`/api/v1/projects/${editingProject.id}`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ name: formData.get('name'), description: formData.get('description'), status: formData.get('status') }),
+        body: JSON.stringify({ name: formData.get('name'), description: formData.get('description'), status: formData.get('status'), leaderId: formData.get('leaderId') || null, memberIds: formData.getAll('memberIds') }),
       })
       setProjects((currentProjects) => currentProjects.map((item) => item.id === project.id ? project : item))
       setEditingProject(null)
@@ -418,19 +445,19 @@ function App() {
         {activeView === 'Equipo' ? (
           <section className="team-section">
             <div className="section-heading"><div><p className="eyebrow">Directorio</p><h2>Personas del equipo</h2></div><span>{team.length} persona{team.length === 1 ? '' : 's'}</span></div>
-            {user.role === 'ADMINISTRADOR' && <form className="quick-create user-create" onSubmit={handleCreateUser}><input name="name" placeholder="Nombre completo" aria-label="Nombre completo" required /><input name="email" type="email" placeholder="Correo electrónico" aria-label="Correo electrónico" required /><input name="password" type="password" placeholder="Contraseña temporal" aria-label="Contraseña temporal" required /><select name="role" aria-label="Rol" defaultValue="PROGRAMADOR"><option value="PROGRAMADOR">Programador</option><option value="LIDER">Líder</option><option value="DISEÑADOR">Diseñador</option></select><button type="submit" disabled={isCreating}>+ {isCreating ? 'Guardando' : 'Crear persona'}</button></form>}
+            {user.role === 'ADMINISTRADOR' && <form className="quick-create user-create" onSubmit={handleCreateUser}><input name="name" placeholder="Nombre completo" aria-label="Nombre completo" required /><input name="email" type="email" placeholder="Correo electrónico" aria-label="Correo electrónico" required /><input name="password" type="password" placeholder="Contraseña temporal" aria-label="Contraseña temporal" required /><select name="role" aria-label="Rol" defaultValue="PROGRAMADOR"><option value="PROGRAMADOR">Programador</option><option value="LIDER">Líder</option><option value="DISEÑADOR">Diseñador</option></select><select name="leaderId" aria-label="Líder responsable"><option value="">Sin líder</option>{team.filter((member) => member.role === 'LIDER').map((leader) => <option value={leader.id} key={leader.id}>{leader.name}</option>)}</select><button type="submit" disabled={isCreating}>+ {isCreating ? 'Guardando' : 'Crear persona'}</button></form>}
             {isLoadingTeam && <p className="inline-status">Cargando equipo...</p>}
             {teamError && <p className="form-error" role="alert">{teamError}</p>}
-            {!isLoadingTeam && !teamError && <div className="team-list">{team.map((member) => <article className="team-row" key={member.id}><span className="avatar">{member.name.slice(0, 1)}</span><span><strong>{member.name}</strong><small>{member.email}</small></span><em>{member.role}</em><b className={member.isActive ? 'active-label' : ''}>{member.isActive ? 'Activo' : 'Inactivo'}</b></article>)}</div>}
+            {!isLoadingTeam && !teamError && <div className="team-list">{team.map((member) => editingMember?.id === member.id ? <form className="member-edit-form" key={member.id} onSubmit={handleUpdateUser}><input name="name" defaultValue={member.name} aria-label="Nombre" required /><input name="email" type="email" defaultValue={member.email} aria-label="Email" required /><input name="password" type="password" placeholder="Nueva contraseña (opcional)" aria-label="Nueva contraseña" /><select name="role" defaultValue={member.role} aria-label="Rol"><option value="LIDER">Líder</option><option value="PROGRAMADOR">Programador</option><option value="DISEÑADOR">Diseñador</option></select><select name="leaderId" defaultValue={member.leaderId || ''} aria-label="Líder responsable"><option value="">Sin líder</option>{team.filter((leader) => leader.role === 'LIDER' && leader.id !== member.id).map((leader) => <option value={leader.id} key={leader.id}>{leader.name}</option>)}</select><button type="submit">Guardar</button><button type="button" onClick={() => setEditingMember(null)}>Cancelar</button></form> : <article className="team-row" key={member.id}><span className="avatar">{member.name.slice(0, 1)}</span><span><strong>{member.name}</strong><small>{member.email}</small></span><em>{member.role}</em><b className={member.isActive ? 'active-label' : ''}>{member.isActive ? 'Activo' : 'Inactivo'}</b><span className="row-actions"><button className="row-action" type="button" onClick={() => setEditingMember(member)}>Editar</button>{member.id !== user.id && <button className="row-action" type="button" onClick={() => handleToggleUser(member)}>{member.isActive ? 'Desactivar' : 'Activar'}</button>}{member.id !== user.id && <button className="row-action danger visible-delete" type="button" onClick={() => handleDeleteUser(member)}>Eliminar</button>}</span></article>)}</div>}
           </section>
         ) : activeView === 'Proyectos' ? (
           <section className="project-section">
             <div className="section-heading"><div><p className="eyebrow">Organización</p><h2>Proyectos</h2></div><span>{projects.length} proyecto{projects.length === 1 ? '' : 's'}</span></div>
-            <form className="quick-create" onSubmit={handleCreateProject}><input name="name" placeholder="Nombre del nuevo proyecto" aria-label="Nombre del proyecto" required /><input name="description" placeholder="Descripción breve (opcional)" aria-label="Descripción del proyecto" /><button type="submit" disabled={isCreating}>+ {isCreating ? 'Guardando' : 'Crear proyecto'}</button></form>
+            <form className="quick-create project-create" onSubmit={handleCreateProject}><input name="name" placeholder="Nombre del nuevo proyecto" aria-label="Nombre del proyecto" required /><input name="description" placeholder="Descripción breve (opcional)" aria-label="Descripción del proyecto" /><select name="leaderId" aria-label="Líder del proyecto"><option value="">Sin líder</option>{team.filter((member) => member.role === 'LIDER').map((leader) => <option value={leader.id} key={leader.id}>{leader.name}</option>)}</select><select name="memberIds" multiple aria-label="Miembros del proyecto">{team.filter((member) => ['PROGRAMADOR', 'DISEÑADOR'].includes(member.role)).map((member) => <option value={member.id} key={member.id}>{member.name}</option>)}</select><button type="submit" disabled={isCreating}>+ {isCreating ? 'Guardando' : 'Crear proyecto'}</button></form>
             {isLoadingProjects && <p className="inline-status">Cargando proyectos...</p>}
             {projectsError && <p className="form-error" role="alert">{projectsError}</p>}
             {!isLoadingProjects && !projectsError && projects.length === 0 && <div className="empty-module"><span className="empty-module-index">02</span><div><h3>Tu primer proyecto empieza aquí.</h3><p>Aún no hay proyectos registrados. Cuando exista el flujo de creación, aparecerán en este espacio.</p></div></div>}
-            {!isLoadingProjects && !projectsError && projects.length > 0 && <div className="project-list">{projects.map((project) => editingProject?.id === project.id ? <form className="project-edit-form" key={project.id} onSubmit={handleUpdateProject}><input name="name" defaultValue={project.name} aria-label="Nombre del proyecto" required /><input name="description" defaultValue={project.description} aria-label="Descripción del proyecto" /><select name="status" defaultValue={project.status} aria-label="Estado del proyecto"><option value="PLANNING">Planificación</option><option value="IN_PROGRESS">En curso</option><option value="COMPLETED">Completado</option></select><button type="submit">Guardar</button><button type="button" onClick={() => setEditingProject(null)}>Cancelar</button></form> : <article className="project-row" key={project.id}><span className="project-dot" /><span><strong>{project.name}</strong><small>{project.description || 'Sin descripción'}</small></span><b>{project.status || 'Sin estado'}</b><span className="row-actions"><button className="row-action" type="button" onClick={() => setEditingProject(project)} aria-label={`Editar ${project.name}`}>Editar</button><button className="row-action danger" type="button" onClick={() => handleDeleteProject(project.id)} aria-label={`Eliminar ${project.name}`}>Eliminar</button></span></article>)}</div>}
+            {!isLoadingProjects && !projectsError && projects.length > 0 && <div className="project-list">{projects.map((project) => editingProject?.id === project.id ? <form className="project-edit-form" key={project.id} onSubmit={handleUpdateProject}><input name="name" defaultValue={project.name} aria-label="Nombre del proyecto" required /><input name="description" defaultValue={project.description} aria-label="Descripción del proyecto" /><select name="status" defaultValue={project.status} aria-label="Estado del proyecto"><option value="PLANNING">Planificación</option><option value="IN_PROGRESS">En curso</option><option value="COMPLETED">Completado</option></select><select name="leaderId" defaultValue={project.leaderId || ''} aria-label="Líder del proyecto"><option value="">Sin líder</option>{team.filter((member) => member.role === 'LIDER').map((leader) => <option value={leader.id} key={leader.id}>{leader.name}</option>)}</select><select name="memberIds" multiple defaultValue={project.memberIds || []} aria-label="Miembros del proyecto">{team.filter((member) => ['PROGRAMADOR', 'DISEÑADOR'].includes(member.role)).map((member) => <option value={member.id} key={member.id}>{member.name}</option>)}</select><button type="submit">Guardar</button><button type="button" onClick={() => setEditingProject(null)}>Cancelar</button></form> : <article className="project-row" key={project.id}><span className="project-dot" /><span><strong>{project.name}</strong><small>{project.description || 'Sin descripción'}</small></span><b>{project.status || 'Sin estado'}</b><span className="row-actions"><button className="row-action" type="button" onClick={() => setEditingProject(project)} aria-label={`Editar ${project.name}`}>Editar</button><button className="row-action danger" type="button" onClick={() => handleDeleteProject(project.id)} aria-label={`Eliminar ${project.name}`}>Eliminar</button></span></article>)}</div>}
           </section>
         ) : ['Tareas', 'Revisión'].includes(activeView) ? (
           <section className="task-section">
