@@ -29,6 +29,8 @@ function App() {
   const [editingTask, setEditingTask] = useState(null)
   const [editingProject, setEditingProject] = useState(null)
   const [editingMember, setEditingMember] = useState(null)
+  const [memberSearch, setMemberSearch] = useState('')
+  const [memberRoleFilter, setMemberRoleFilter] = useState('TODOS')
 
   useEffect(() => {
     async function restoreSession() {
@@ -411,6 +413,10 @@ function App() {
   const navigationViews = ['PROGRAMADOR', 'DISEÑADOR'].includes(user.role)
     ? ['Tareas']
     : ['Resumen', 'Equipo', 'Proyectos', 'Tareas', 'Revisión']
+  const visibleTeam = team.filter((member) => (
+    (memberRoleFilter === 'TODOS' || member.role === memberRoleFilter)
+    && `${member.name} ${member.email}`.toLowerCase().includes(memberSearch.toLowerCase())
+  ))
 
   return (
     <main className="workspace-shell">
@@ -444,11 +450,12 @@ function App() {
         </section>
         {activeView === 'Equipo' ? (
           <section className="team-section">
-            <div className="section-heading"><div><p className="eyebrow">Directorio</p><h2>Personas del equipo</h2></div><span>{team.length} persona{team.length === 1 ? '' : 's'}</span></div>
+            <div className="section-heading"><div><p className="eyebrow">Directorio</p><h2>Personas del equipo</h2></div><span>{visibleTeam.length} de {team.length}</span></div>
             {user.role === 'ADMINISTRADOR' && <form className="quick-create user-create" onSubmit={handleCreateUser}><input name="name" placeholder="Nombre completo" aria-label="Nombre completo" required /><input name="email" type="email" placeholder="Correo electrónico" aria-label="Correo electrónico" required /><input name="password" type="password" placeholder="Contraseña temporal" aria-label="Contraseña temporal" required /><select name="role" aria-label="Rol" defaultValue="PROGRAMADOR"><option value="PROGRAMADOR">Programador</option><option value="LIDER">Líder</option><option value="DISEÑADOR">Diseñador</option></select><select name="leaderId" aria-label="Líder responsable"><option value="">Sin líder</option>{team.filter((member) => member.role === 'LIDER').map((leader) => <option value={leader.id} key={leader.id}>{leader.name}</option>)}</select><button type="submit" disabled={isCreating}>+ {isCreating ? 'Guardando' : 'Crear persona'}</button></form>}
+            <div className="directory-filters"><input value={memberSearch} onChange={(event) => setMemberSearch(event.target.value)} placeholder="Buscar por nombre o correo" aria-label="Buscar en el equipo" /><select value={memberRoleFilter} onChange={(event) => setMemberRoleFilter(event.target.value)} aria-label="Filtrar por rol"><option value="TODOS">Todos los roles</option><option value="ADMINISTRADOR">Administradores</option><option value="LIDER">Líderes</option><option value="PROGRAMADOR">Programadores</option><option value="DISEÑADOR">Diseñadores</option></select></div>
             {isLoadingTeam && <p className="inline-status">Cargando equipo...</p>}
             {teamError && <p className="form-error" role="alert">{teamError}</p>}
-            {!isLoadingTeam && !teamError && <div className="team-list">{team.map((member) => editingMember?.id === member.id ? <form className="member-edit-form" key={member.id} onSubmit={handleUpdateUser}><input name="name" defaultValue={member.name} aria-label="Nombre" required /><input name="email" type="email" defaultValue={member.email} aria-label="Email" required /><input name="password" type="password" placeholder="Nueva contraseña (opcional)" aria-label="Nueva contraseña" /><select name="role" defaultValue={member.role} aria-label="Rol"><option value="LIDER">Líder</option><option value="PROGRAMADOR">Programador</option><option value="DISEÑADOR">Diseñador</option></select><select name="leaderId" defaultValue={member.leaderId || ''} aria-label="Líder responsable"><option value="">Sin líder</option>{team.filter((leader) => leader.role === 'LIDER' && leader.id !== member.id).map((leader) => <option value={leader.id} key={leader.id}>{leader.name}</option>)}</select><button type="submit">Guardar</button><button type="button" onClick={() => setEditingMember(null)}>Cancelar</button></form> : <article className="team-row" key={member.id}><span className="avatar">{member.name.slice(0, 1)}</span><span><strong>{member.name}</strong><small>{member.email}</small></span><em>{member.role}</em><b className={member.isActive ? 'active-label' : ''}>{member.isActive ? 'Activo' : 'Inactivo'}</b><span className="row-actions"><button className="row-action" type="button" onClick={() => setEditingMember(member)}>Editar</button>{member.id !== user.id && <button className="row-action" type="button" onClick={() => handleToggleUser(member)}>{member.isActive ? 'Desactivar' : 'Activar'}</button>}{member.id !== user.id && <button className="row-action danger visible-delete" type="button" onClick={() => handleDeleteUser(member)}>Eliminar</button>}</span></article>)}</div>}
+            {!isLoadingTeam && !teamError && <div className="team-list">{visibleTeam.map((member) => editingMember?.id === member.id ? <form className="member-edit-form" key={member.id} onSubmit={handleUpdateUser}><input name="name" defaultValue={member.name} aria-label="Nombre" required /><input name="email" type="email" defaultValue={member.email} aria-label="Email" required /><input name="password" type="password" placeholder="Nueva contraseña (opcional)" aria-label="Nueva contraseña" /><select name="role" defaultValue={member.role} aria-label="Rol"><option value="LIDER">Líder</option><option value="PROGRAMADOR">Programador</option><option value="DISEÑADOR">Diseñador</option></select><select name="leaderId" defaultValue={member.leaderId || ''} aria-label="Líder responsable"><option value="">Sin líder</option>{team.filter((leader) => leader.role === 'LIDER' && leader.id !== member.id).map((leader) => <option value={leader.id} key={leader.id}>{leader.name}</option>)}</select><button type="submit">Guardar</button><button type="button" onClick={() => setEditingMember(null)}>Cancelar</button></form> : <article className="team-row" key={member.id}><span className="avatar">{member.name.slice(0, 1)}</span><span><strong>{member.name}</strong><small>{member.email}</small></span><em>{member.role}</em><b className={member.isActive ? 'active-label' : ''}>{member.isActive ? 'Activo' : 'Inactivo'}</b><span className="row-actions"><button className="row-action" type="button" onClick={() => setEditingMember(member)}>Editar</button>{member.id !== user.id && <button className="row-action" type="button" onClick={() => handleToggleUser(member)}>{member.isActive ? 'Desactivar' : 'Activar'}</button>}{member.id !== user.id && <button className="row-action danger visible-delete" type="button" onClick={() => handleDeleteUser(member)}>Eliminar</button>}</span></article>)}</div>}
           </section>
         ) : activeView === 'Proyectos' ? (
           <section className="project-section">
