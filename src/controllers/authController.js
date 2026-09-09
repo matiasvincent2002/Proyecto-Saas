@@ -16,6 +16,12 @@ export function createAuthController(authService) {
         data: authService.toPublicUser(request.user),
         message: 'Usuario autenticado'
       });
+    },
+
+    changePassword: async (request, response) => {
+      const { currentPassword, newPassword } = request.body;
+      await authService.changePassword(request.user.id, currentPassword, newPassword);
+      response.json({ data: null, message: 'Contraseña actualizada correctamente' });
     }
   };
 }

@@ -228,6 +228,22 @@ Respuesta:
 204 No Content
 ```
 
+### Cambiar contraseña
+
+```http
+POST /api/v1/auth/change-password
+Authorization: Bearer <token>
+```
+
+```json
+{
+  "currentPassword": "contraseña-actual",
+  "newPassword": "contraseña-nueva"
+}
+```
+
+El login limita los intentos repetidos por IP y correo durante una ventana temporal. La recuperación por correo requiere configurar un proveedor externo y queda simulada mediante el cambio autenticado de contraseña.
+
 ### Usuarios
 
 Lista los usuarios no eliminados o crea líderes y programadores. Requiere autenticación.

@@ -81,6 +81,11 @@
 .profile-card dt { color: var(--muted); font-size: .65rem; text-transform: uppercase; }
 .profile-card dd { margin: .35rem 0 0; color: var(--ink); font-size: .8rem; }
 .profile-card .verified { color: #4b9464; }
+.password-form { display: grid; grid-template-columns: 1fr 1fr auto; align-items: end; gap: .6rem; width: min(100%, 650px); margin-top: 2rem; }
+.password-form .eyebrow { grid-column: 1 / -1; margin-bottom: 0; }
+.password-form input { min-width: 0; padding: .6rem; color: var(--ink); background: var(--cream); border: 1px solid var(--line); }
+.password-form button { padding: .6rem .8rem; color: #fffaf0; background: var(--teal); border: 0; font-size: .72rem; }
+.password-form small { grid-column: 1 / -1; color: var(--muted); font-size: .72rem; }
 .team-section { margin-top: 2rem; }
 .section-heading { display: flex; align-items: end; justify-content: space-between; gap: 1rem; padding-bottom: 1rem; border-bottom: 1px solid var(--line); }
 .section-heading h2 { margin: 0; color: var(--ink); font-family: Georgia, serif; font-size: 2.5rem; font-weight: normal; line-height: 1; }
@@ -177,6 +182,8 @@
   .dashboard-grid { grid-template-columns: 1fr; }
   .profile-card { display: block; }
   .profile-card dl { margin-top: 2rem; }
+  .password-form { grid-template-columns: 1fr; }
+  .password-form .eyebrow, .password-form small { grid-column: auto; }
   .team-row { grid-template-columns: auto minmax(0, 1fr); }
   .team-row em, .team-row b { grid-column: 2; }
   .empty-module { grid-template-columns: 1fr; gap: 1rem; }

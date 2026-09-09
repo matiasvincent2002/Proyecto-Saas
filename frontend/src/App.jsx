@@ -31,6 +31,7 @@ function App() {
   const [editingMember, setEditingMember] = useState(null)
   const [memberSearch, setMemberSearch] = useState('')
   const [memberRoleFilter, setMemberRoleFilter] = useState('TODOS')
+  const [passwordMessage, setPasswordMessage] = useState('')
 
   useEffect(() => {
     async function restoreSession() {
@@ -98,6 +99,8 @@ function App() {
     }
 
     loadTasks()
+    const intervalId = window.setInterval(loadTasks, 30000)
+    return () => window.clearInterval(intervalId)
   }, [activeView, token, user?.role])
 
   useEffect(() => {
@@ -179,6 +182,24 @@ function App() {
       setProjectsError(createError.message)
     } finally {
       setIsCreating(false)
+    }
+  }
+
+  async function handleChangePassword(event) {
+    event.preventDefault()
+    const form = event.currentTarget
+    setPasswordMessage('')
+    try {
+      const formData = new FormData(form)
+      await request('/api/v1/auth/change-password', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ currentPassword: formData.get('currentPassword'), newPassword: formData.get('newPassword') }),
+      })
+      form.reset()
+      setPasswordMessage('Contraseña actualizada correctamente')
+    } catch (passwordError) {
+      setPasswordMessage(passwordError.message)
     }
   }
 
@@ -486,6 +507,7 @@ function App() {
         <section className="profile-card">
           <div><p className="eyebrow">Tu perfil</p><h2>{user.name}</h2><p>{user.email}</p></div>
           <dl><div><dt>Rol</dt><dd>{user.role}</dd></div><div><dt>Estado</dt><dd className="verified">Activo</dd></div></dl>
+          <form className="password-form" onSubmit={handleChangePassword}><p className="eyebrow">Seguridad</p><input name="currentPassword" type="password" placeholder="Contraseña actual" aria-label="Contraseña actual" required /><input name="newPassword" type="password" placeholder="Nueva contraseña (mínimo 8 caracteres)" aria-label="Nueva contraseña" minLength="8" required /><button type="submit">Cambiar contraseña</button>{passwordMessage && <small>{passwordMessage}</small>}</form>
         </section>
       </section>
     </main>

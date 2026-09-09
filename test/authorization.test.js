@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createTaskController } from '../src/controllers/taskController.js';
 import { requireRole } from '../src/middleware/requireRole.js';
+import { createLoginRateLimit } from '../src/middleware/loginRateLimit.js';
 
 test('requireRole rechaza usuarios fuera del rol permitido', () => {
   let receivedError;
@@ -66,4 +67,15 @@ test('un líder no puede asignar tareas fuera de su equipo', async () => {
     () => controller.create({ user: { id: 'leader-1', role: 'LIDER' }, body: { title: 'Fuera de equipo', assigneeId: 'worker-1' } }, {}),
     { code: 'ASSIGNEE_OUTSIDE_TEAM', status: 403 }
   );
+});
+
+test('limita los intentos repetidos de login', () => {
+  const middleware = createLoginRateLimit({ maxAttempts: 2, windowMilliseconds: 60_000 });
+  const request = { ip: '127.0.0.1', body: { email: 'test@example.com' } };
+  const responses = [];
+  const response = { status(code) { responses.push(code); return this; }, json() { return this; } };
+  middleware(request, response, () => {});
+  middleware(request, response, () => {});
+  middleware(request, response, () => {});
+  assert.deepEqual(responses, [429]);
 });

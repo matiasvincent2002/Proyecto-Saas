@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { comparePassword } from '../auth/password.js';
+import { comparePassword, hashPassword } from '../auth/password.js';
 import { createOpaqueToken, hashToken } from '../auth/token.js';
 import { config } from '../config/env.js';
 import { HttpError } from '../utils/httpError.js';
@@ -52,6 +52,17 @@ export class AuthService {
       throw new HttpError(401, 'INVALID_SESSION', 'La sesión no es válida');
     }
     return { session, user };
+  }
+
+  async changePassword(userId, currentPassword, newPassword) {
+    if (typeof currentPassword !== 'string' || typeof newPassword !== 'string' || newPassword.length < 8) {
+      throw new HttpError(400, 'INVALID_PASSWORD', 'La nueva contraseña debe tener al menos 8 caracteres');
+    }
+    const user = await this.userRepository.findById(userId);
+    if (!user || !(await comparePassword(currentPassword, user.passwordHash))) {
+      throw new HttpError(401, 'INVALID_PASSWORD', 'La contraseña actual no es correcta');
+    }
+    await this.userRepository.updateById(userId, { passwordHash: await hashPassword(newPassword) });
   }
 
   toPublicUser(user) {

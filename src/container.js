@@ -9,6 +9,7 @@ import { createProjectController } from './controllers/projectController.js';
 import { createTaskController } from './controllers/taskController.js';
 import { createAuthenticate } from './middleware/authenticate.js';
 import { requireRole } from './middleware/requireRole.js';
+import { createLoginRateLimit } from './middleware/loginRateLimit.js';
 
 const userRepository = new UserRepository();
 const projectRepository = new ProjectRepository();
@@ -23,3 +24,4 @@ export const taskController = createTaskController(taskRepository, userRepositor
 export const authenticate = createAuthenticate(authService);
 export const requireAdmin = requireRole('ADMINISTRADOR');
 export const requireProjectManager = requireRole('ADMINISTRADOR', 'LIDER');
+export const loginRateLimit = createLoginRateLimit();

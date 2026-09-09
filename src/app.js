@@ -1,5 +1,5 @@
 import express from 'express';
-import { authController, authenticate, projectController, requireAdmin, requireProjectManager, taskController, userController } from './container.js';
+import { authController, authenticate, loginRateLimit, projectController, requireAdmin, requireProjectManager, taskController, userController } from './container.js';
 import { createAuthRoutes } from './routes/authRoutes.js';
 import { createUserRoutes } from './routes/userRoutes.js';
 import { createProjectRoutes } from './routes/projectRoutes.js';
@@ -11,7 +11,7 @@ const app = express();
 app.use(createCors());
 app.use(express.json());
 
-app.use('/api/v1/auth', createAuthRoutes(authController, authenticate));
+app.use('/api/v1/auth', createAuthRoutes(authController, authenticate, loginRateLimit));
 app.use('/api/v1/users', createUserRoutes(userController, authenticate, requireAdmin));
 app.use('/api/v1/projects', createProjectRoutes(projectController, authenticate, requireProjectManager));
 app.use('/api/v1/tasks', createTaskRoutes(taskController, authenticate));
