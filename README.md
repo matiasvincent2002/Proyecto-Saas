@@ -235,6 +235,9 @@ Lista los usuarios no eliminados o crea líderes y programadores. Requiere auten
 ```http
 GET /api/v1/users
 POST /api/v1/users
+PUT /api/v1/users/:id
+PATCH /api/v1/users/:id/active
+DELETE /api/v1/users/:id
 Authorization: Bearer <token>
 ```
 

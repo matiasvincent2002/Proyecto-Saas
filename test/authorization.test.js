@@ -38,3 +38,19 @@ test('no permite asignar una tarea a un líder', async () => {
     { code: 'INVALID_TASK_ASSIGNEE', status: 400 }
   );
 });
+
+test('exige un motivo al devolver una tarea en revisión', async () => {
+  const controller = createTaskController(
+    {
+      async findById() { return { id: 'task-1', status: 'PENDING_REVIEW', assigneeId: 'worker-1' }; },
+      async updateStatus() { throw new Error('No debería actualizar sin motivo'); }
+    },
+    { async findById() { return { id: 'worker-1', role: 'PROGRAMADOR' }; } },
+    { async findById() { return null; } }
+  );
+
+  await assert.rejects(
+    () => controller.updateStatus({ params: { id: 'task-1' }, user: { id: 'leader-1', role: 'LIDER' }, body: { status: 'IN_PROGRESS' } }, {}),
+    { code: 'REVIEW_REASON_REQUIRED', status: 400 }
+  );
+});
