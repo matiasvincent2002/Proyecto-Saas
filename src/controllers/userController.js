@@ -23,8 +23,8 @@ export function createUserController(userRepository, toPublicUser) {
     },
     create: async (request, response) => {
       const { name, email, password, role } = request.body;
-      if (!name?.trim() || !email?.trim() || !password || !allowedRoles.includes(role)) {
-        throw new HttpError(400, 'INVALID_USER_INPUT', 'Nombre, email, contraseña y rol son obligatorios');
+      if (!name?.trim() || !email?.trim() || !password || password.length < 8 || !allowedRoles.includes(role)) {
+        throw new HttpError(400, 'INVALID_USER_INPUT', 'Nombre, email, rol y una contraseña de al menos 8 caracteres son obligatorios');
       }
       if (await userRepository.findByEmail(email.trim().toLowerCase())) {
         throw new HttpError(409, 'EMAIL_ALREADY_EXISTS', 'El email ya está registrado');
@@ -53,6 +53,12 @@ export function createUserController(userRepository, toPublicUser) {
       const { name, email, role, leaderId = null, password } = request.body;
       if (!name?.trim() || !email?.trim() || !allowedRoles.includes(role)) {
         throw new HttpError(400, 'INVALID_USER_INPUT', 'Nombre, email y rol son obligatorios');
+      }
+      if (password && password.length < 8) {
+        throw new HttpError(400, 'INVALID_PASSWORD', 'La contraseña debe tener al menos 8 caracteres');
+      }
+      if (existingUser.id === request.user.id && existingUser.role === 'ADMINISTRADOR' && role !== 'ADMINISTRADOR') {
+        throw new HttpError(400, 'LAST_ADMIN_DENIED', 'No puedes cambiar el rol del último administrador');
       }
       const normalizedEmail = email.trim().toLowerCase();
       const duplicate = await userRepository.findByEmail(normalizedEmail);
