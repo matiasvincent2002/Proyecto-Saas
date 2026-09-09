@@ -138,6 +138,8 @@
 .task-row > span:not(.task-check) { display: grid; gap: .2rem; }
 .task-row strong { color: var(--ink); font-size: .9rem; }
 .task-row small, .task-row b { color: var(--muted); font-size: .72rem; font-weight: normal; }
+.task-row .priority-HIGH { color: #b84a3b; font-weight: bold; }
+.task-row .priority-LOW { color: #4b9464; }
 .row-actions { display: flex; align-items: center; gap: .25rem; }
 .row-action { padding: .2rem .4rem; color: var(--muted); background: transparent; border: 0; font-size: .7rem; }
 .row-action:hover, .row-action.danger:hover { color: var(--coral); }

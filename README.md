@@ -299,7 +299,9 @@ Body para crear una tarea:
   "title": "Preparar primera entrega",
   "description": "Revisar los pendientes del equipo",
   "projectId": null,
-  "assigneeId": null
+  "assigneeId": null,
+  "priority": "MEDIUM",
+  "dueDate": null
 }
 ```
 

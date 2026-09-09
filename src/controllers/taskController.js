@@ -34,7 +34,10 @@ export function createTaskController(taskRepository, userRepository, projectRepo
       if (['PROGRAMADOR', 'DISEÑADOR'].includes(request.user.role)) {
         throw new HttpError(403, 'TASK_CREATE_DENIED', 'Los trabajadores no pueden crear tareas');
       }
-      const { title, description = '', projectId = null, assigneeId = null } = request.body;
+      const { title, description = '', projectId = null, assigneeId = null, priority = 'MEDIUM', dueDate = null } = request.body;
+      if (!['LOW', 'MEDIUM', 'HIGH'].includes(priority)) {
+        throw new HttpError(400, 'INVALID_TASK_PRIORITY', 'La prioridad de la tarea no es válida');
+      }
       if (typeof title !== 'string' || !title.trim()) {
         throw new HttpError(400, 'INVALID_TASK_INPUT', 'El título de la tarea es obligatorio');
       }
@@ -46,6 +49,8 @@ export function createTaskController(taskRepository, userRepository, projectRepo
         description: typeof description === 'string' ? description.trim() : '',
         projectId,
         assigneeId,
+        priority,
+        dueDate,
         status: 'TODO',
         isDeleted: false,
         createdBy: request.user.id,
@@ -86,9 +91,12 @@ export function createTaskController(taskRepository, userRepository, projectRepo
       if (['PROGRAMADOR', 'DISEÑADOR'].includes(request.user.role)) {
         throw new HttpError(403, 'TASK_UPDATE_DENIED', 'Los trabajadores no pueden editar tareas');
       }
-      const { title, description = '', projectId = null, assigneeId = null } = request.body;
+      const { title, description = '', projectId = null, assigneeId = null, priority = 'MEDIUM', dueDate = null } = request.body;
       if (typeof title !== 'string' || !title.trim()) {
         throw new HttpError(400, 'INVALID_TASK_INPUT', 'El título de la tarea es obligatorio');
+      }
+      if (!['LOW', 'MEDIUM', 'HIGH'].includes(priority)) {
+        throw new HttpError(400, 'INVALID_TASK_PRIORITY', 'La prioridad de la tarea no es válida');
       }
       await validateAssignee(assigneeId, request.user);
       await validateProject(projectId, assigneeId);
@@ -101,7 +109,9 @@ export function createTaskController(taskRepository, userRepository, projectRepo
         title: title.trim(),
         description: typeof description === 'string' ? description.trim() : '',
         projectId,
-        assigneeId
+        assigneeId,
+        priority,
+        dueDate
       });
       if (!task) {
         throw new HttpError(404, 'TASK_NOT_FOUND', 'La tarea no existe');
