@@ -2,11 +2,14 @@ import { randomUUID } from 'node:crypto';
 import { HttpError } from '../utils/httpError.js';
 
 export function createTaskController(taskRepository, userRepository, projectRepository) {
-  async function validateAssignee(assigneeId) {
+  async function validateAssignee(assigneeId, actor) {
     if (!assigneeId) return;
     const assignee = await userRepository.findById(assigneeId);
     if (!assignee || !['PROGRAMADOR', 'DISEÑADOR'].includes(assignee.role)) {
       throw new HttpError(400, 'INVALID_TASK_ASSIGNEE', 'Las tareas solo pueden asignarse a programadores o diseñadores');
+    }
+    if (actor.role === 'LIDER' && assignee.leaderId !== actor.id) {
+      throw new HttpError(403, 'ASSIGNEE_OUTSIDE_TEAM', 'Solo puedes asignar tareas a personas de tu equipo');
     }
   }
 
@@ -35,7 +38,7 @@ export function createTaskController(taskRepository, userRepository, projectRepo
       if (typeof title !== 'string' || !title.trim()) {
         throw new HttpError(400, 'INVALID_TASK_INPUT', 'El título de la tarea es obligatorio');
       }
-      await validateAssignee(assigneeId);
+      await validateAssignee(assigneeId, request.user);
       await validateProject(projectId, assigneeId);
       const task = await taskRepository.create({
         id: randomUUID(),
@@ -87,7 +90,7 @@ export function createTaskController(taskRepository, userRepository, projectRepo
       if (typeof title !== 'string' || !title.trim()) {
         throw new HttpError(400, 'INVALID_TASK_INPUT', 'El título de la tarea es obligatorio');
       }
-      await validateAssignee(assigneeId);
+      await validateAssignee(assigneeId, request.user);
       await validateProject(projectId, assigneeId);
       const existingTask = await taskRepository.findById(request.params.id);
       if (!existingTask) throw new HttpError(404, 'TASK_NOT_FOUND', 'La tarea no existe');

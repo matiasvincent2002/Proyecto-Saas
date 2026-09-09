@@ -54,3 +54,16 @@ test('exige un motivo al devolver una tarea en revisión', async () => {
     { code: 'REVIEW_REASON_REQUIRED', status: 400 }
   );
 });
+
+test('un líder no puede asignar tareas fuera de su equipo', async () => {
+  const controller = createTaskController(
+    { async create() { throw new Error('No debería crear la tarea'); } },
+    { async findById() { return { id: 'worker-1', role: 'PROGRAMADOR', leaderId: 'other-leader' }; } },
+    { async findById() { return null; } }
+  );
+
+  await assert.rejects(
+    () => controller.create({ user: { id: 'leader-1', role: 'LIDER' }, body: { title: 'Fuera de equipo', assigneeId: 'worker-1' } }, {}),
+    { code: 'ASSIGNEE_OUTSIDE_TEAM', status: 403 }
+  );
+});
